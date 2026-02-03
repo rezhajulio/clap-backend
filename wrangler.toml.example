@@ -1,0 +1,13 @@
+name = "clap-backend"
+main = "worker.js"
+compatibility_date = "2024-02-03"
+
+[vars]
+# Comma-separated list of allowed origins for CORS
+ALLOWED_ORIGINS = "https://yourdomain.com,http://localhost:4321"
+
+[[kv_namespaces]]
+binding = "BLOG_CLAPS"
+# Create with: wrangler kv:namespace create BLOG_CLAPS
+# Then paste the id here
+id = ""
