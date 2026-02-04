@@ -1,24 +1,25 @@
 # Clap Backend
 
-A simple Medium-style clap counter API for static blogs. Built with [Hono](https://hono.dev) and Cloudflare Workers + KV.
+A simple Medium-style clap counter API for static blogs. Built with [Hono](https://hono.dev) and Cloudflare Workers + D1.
 
 ## Features
 
 - GET/POST endpoints for clap counts
-- IP-based rate limiting (50 claps per post per hour)
+- IP-based rate limiting (50 claps per post per hour, max 10 per request)
+- Atomic operations with D1 (no lost increments)
 - Configurable CORS origins
-- Slug validation
+- Automatic cleanup of expired rate limits (daily cron)
 
 ## Deploy
 
 1. Install dependencies:
    ```bash
-   npm install
+   bun install
    ```
 
-2. Create KV namespace:
+2. Create D1 database:
    ```bash
-   wrangler kv:namespace create BLOG_CLAPS
+   wrangler d1 create clap-backend
    ```
 
 3. Copy and configure wrangler.toml:
@@ -26,14 +27,51 @@ A simple Medium-style clap counter API for static blogs. Built with [Hono](https
    cp wrangler.toml.example wrangler.toml
    ```
    
-   Then edit `wrangler.toml`:
-   - Paste the KV namespace ID from step 2
+   Edit `wrangler.toml`:
+   - Paste the D1 database ID from step 2
    - Set `ALLOWED_ORIGINS` to your domain(s)
 
-4. Deploy:
+4. Apply database schema:
    ```bash
-   npm run deploy
+   wrangler d1 migrations apply clap-backend --remote
    ```
+
+5. Deploy:
+   ```bash
+   wrangler deploy
+   ```
+
+6. Note your worker URL (e.g., `https://clap-backend.your-subdomain.workers.dev`)
+
+## Frontend Integration
+
+The component is at `src/components/ClapButton.tsx`.
+
+1. Open your blog post layout (e.g., `src/layouts/PostDetails.astro`)
+
+2. Import and use the component:
+   ```astro
+   ---
+   import ClapButton from '../components/ClapButton';
+   const { slug } = Astro.params;
+   ---
+
+   <ClapButton 
+     client:visible 
+     slug={slug} 
+     apiUrl="https://clap-backend.your-subdomain.workers.dev" 
+   />
+   ```
+
+## Testing
+
+1. Run dev server: `bun run dev`
+2. Open a blog post
+3. Click the clap button
+   - Count increments instantly (optimistic UI)
+   - Confetti animation plays
+   - POST request fires after 1s debounce
+   - Refresh to verify persistence
 
 ## API
 

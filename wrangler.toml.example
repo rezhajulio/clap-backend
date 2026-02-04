@@ -5,9 +5,16 @@ compatibility_date = "2024-02-03"
 [vars]
 # Comma-separated list of allowed origins for CORS
 ALLOWED_ORIGINS = "https://yourdomain.com,http://localhost:4321"
+# Maximum claps allowed per single request (default: 10)
+MAX_CLAPS_PER_REQUEST = "10"
+# Maximum total claps per IP per hour (default: 50)
+MAX_CLAPS_PER_IP = "50"
 
-[[kv_namespaces]]
-binding = "BLOG_CLAPS"
-# Create with: wrangler kv:namespace create BLOG_CLAPS
-# Then paste the id here
-id = ""
+[[d1_databases]]
+binding = "DB"
+database_name = "clap-backend"
+database_id = "YOUR_D1_DATABASE_ID_HERE"
+migrations_dir = "migrations"
+
+[triggers]
+crons = ["0 0 * * *"]  # Cleanup expired rate limits daily at midnight UTC
