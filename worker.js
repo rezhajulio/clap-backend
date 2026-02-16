@@ -7,7 +7,7 @@ const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const DEBOUNCE_MS = 500;
 
 const getMaxClapsPerIp = (env) => parseInt(env.MAX_CLAPS_PER_IP, 10) || 50;
-const getMaxClapsPerRequest = (env) => parseInt(env.MAX_CLAPS_PER_REQUEST, 10) || 10;
+const getMaxClapsPerRequest = (env) => parseInt(env.MAX_CLAPS_PER_REQUEST, 10) || 50;
 
 const allowedOriginsCache = new WeakMap();
 
@@ -118,16 +118,7 @@ app.post('/claps/:slug', async (c) => {
     WHERE rate_limits.count + excluded.count <= ?6
   `).bind(ipHash, slug, windowStart, incrementBy, now, getMaxClapsPerIp(c.env));
 
-  const clapsStmt = c.env.DB.prepare(`
-    INSERT INTO claps (slug, count, updated_at)
-    VALUES (?1, ?2, ?3)
-    ON CONFLICT(slug) DO UPDATE SET
-      count = claps.count + excluded.count,
-      updated_at = excluded.updated_at
-    RETURNING count
-  `).bind(slug, incrementBy, now);
-
-  const [rateLimitResult, clapsResult] = await c.env.DB.batch([rateLimitStmt, clapsStmt]);
+  const rateLimitResult = await rateLimitStmt.run();
 
   if (rateLimitResult.meta.changes === 0) {
     return c.json({
@@ -138,8 +129,16 @@ app.post('/claps/:slug', async (c) => {
     });
   }
 
-  const row = clapsResult.results?.[0];
-  return c.json({ count: row?.count ?? 0, success: true }, 200, {
+  const clapsResult = await c.env.DB.prepare(`
+    INSERT INTO claps (slug, count, updated_at)
+    VALUES (?1, ?2, ?3)
+    ON CONFLICT(slug) DO UPDATE SET
+      count = claps.count + excluded.count,
+      updated_at = excluded.updated_at
+    RETURNING count
+  `).bind(slug, incrementBy, now).first();
+
+  return c.json({ count: clapsResult?.count ?? 0, success: true }, 200, {
     'Cache-Control': 'no-store',
   });
 });

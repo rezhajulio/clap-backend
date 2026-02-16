@@ -5,8 +5,8 @@ compatibility_date = "2024-02-03"
 [vars]
 # Comma-separated list of allowed origins for CORS
 ALLOWED_ORIGINS = "https://yourdomain.com,http://localhost:4321"
-# Maximum claps allowed per single request (default: 10)
-MAX_CLAPS_PER_REQUEST = "10"
+# Maximum claps allowed per single request (default: 50)
+MAX_CLAPS_PER_REQUEST = "50"
 # Maximum total claps per IP per hour (default: 50)
 MAX_CLAPS_PER_IP = "50"
 
